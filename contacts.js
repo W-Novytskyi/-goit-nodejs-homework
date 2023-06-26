@@ -4,27 +4,32 @@ const { nanoid } = require("nanoid");
 
 const contactsPath = path.resolve(__dirname, "db", "contacts.json");
 
-async function listContacts() {
+async function withErrorHandling(asyncFn) {
   try {
-    const data = await fs.readFile(contactsPath, "utf-8");
-    return JSON.parse(data);
+    return await asyncFn();
   } catch (error) {
-    return [];
-  }
-}
-
-async function getContactById(contactId) {
-  try {
-    const contacts = await listContacts();
-    const contact = contacts.find((c) => c.id === contactId);
-    return contact || null;
-  } catch (error) {
+    console.error("Error:", error);
     return null;
   }
 }
 
+async function listContacts() {
+  return withErrorHandling(async () => {
+    const data = await fs.readFile(contactsPath, "utf-8");
+    return JSON.parse(data);
+  });
+}
+
+async function getContactById(contactId) {
+  return withErrorHandling(async () => {
+    const contacts = await listContacts();
+    const contact = contacts.find((c) => c.id === contactId);
+    return contact || null;
+  });
+}
+
 async function removeContact(contactId) {
-  try {
+  return withErrorHandling(async () => {
     const contacts = await listContacts();
     const index = contacts.findIndex((c) => c.id === contactId);
     if (index === -1) {
@@ -33,13 +38,11 @@ async function removeContact(contactId) {
     const [removedContact] = contacts.splice(index, 1);
     await fs.writeFile(contactsPath, JSON.stringify(contacts, null, 2));
     return removedContact;
-  } catch (error) {
-    return null;
-  }
+  });
 }
 
 async function addContact({ name, email, phone }) {
-  try {
+  return withErrorHandling(async () => {
     const contacts = await listContacts();
     const newContact = {
       id: nanoid(),
@@ -50,9 +53,7 @@ async function addContact({ name, email, phone }) {
     contacts.push(newContact);
     await fs.writeFile(contactsPath, JSON.stringify(contacts, null, 2));
     return newContact;
-  } catch (error) {
-    return null;
-  }
+  });
 }
 
 module.exports = {
